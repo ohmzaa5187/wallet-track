@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Cloud Budget Tracker</title>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.283.1.min.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); text-align: center; width: 350px; }
+        input, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #ddd; box-sizing: border-box; }
+        button { background: #764ba2; color: white; font-weight: bold; cursor: pointer; border: none; }
+        button:hover { background: #5b3a7d; }
+        .status { margin-top: 15px; font-weight: bold; font-size: 0.9em; }
+        h2 { color: #333; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2>💸 Cloud Budget App</h2>
+    <p>ตั้งงบประมาณ (Budget):</p>
+    <input type="number" id="budget" placeholder="เช่น 15000">
+    <p>อัปโหลดสลิป (CSV):</p>
+    <input type="file" id="file" accept=".csv">
+    <button onclick="upload()">🚀 ส่งข้อมูล</button>
+    <p id="status" class="status"></p>
+</div>
+
+<script>
+    // --- ⚠️ แก้ไขข้อมูลตรงนี้ (ไปที่ Launch AWS Academy Learner Lab -> AWS Details -> AWS CLI -> Show) ---
+    const BUCKET_NAME = 'project-budget-kino'; 
+    const ACCESS_KEY = 'ASIATCKAONAGTSU6DXTR';
+    const SECRET_KEY = 'vaE7uI6oWD7v7bfDz32Iv9gOWfrpMPBTnLF9t9qD';
+    const SESSION_TOKEN = 'IQoJb3JpZ2luX2VjEF8aCXVzLXdlc3QtMiJHMEUCIQCMU+20HTWbsfdvQvp6FPA7/7c/Z6YE0Nw0Q+3fDrzTYgIgGH6JOADnKzu77I49bV2pK1sjgrUKlP9pOvE8nl6aQ7UqrgIIKBAAGgwyMTExMjU0MzAyODUiDF8/5bR39KOwCu6jdSqLAuCKVMhokq4mAL1tAM9toIxAe6G2ee3dAhg60mNuxAdulJS7HKGnzmlZUDDUPpkw9+lsrzbUFrz8CCs+hRCkrzSvBDTlEAeo7IjWbxHeh/ycYnHDgmeFzJSkh2uOBDyggwvneCt9oR1n3G1AXgSa3V+S1oVc1JtQVTx9XwwVn7Y/UeJJHX2omlx84ACK8YLTDuzewh761igmOvrkka8XFTdSF5LMr0IQsGWysBaqC1jUxj/HgGVjkxrwkF+lN/iVYKwqA/Ut91OFwOb4+QVPqYkmngQJkbfnyU9zmBPDf7ZvCZVMCGvujkLC7xKNRFR1dHWrxfBKVU8UpLLni4PplATQFhwNVakcpmWg4DDUkofJBjqdAZDevpFALMEGQCpmT/WzfLT7KEs3rrQ3RD7+bdGe7blXiOlpCRGve2OO/EtlwmlUb4/0199XA1qVVWTmQkcVy9T6oOaVujzfPVOxP0d6o3XMX7YPy9U7qothCm2K5N49T5RakV4bde750/KceRtnN/Du0ikl9loziUNniMOpn3f2tQcVjoZ6ESEZLd7jStL5LMVR3vAAQFLqqkjUsTA=';
+    // ---------------------------
+    
+    AWS.config.update({ 
+        accessKeyId: ACCESS_KEY, 
+        secretAccessKey: SECRET_KEY, 
+        sessionToken: SESSION_TOKEN, 
+        region: 'us-east-1' 
+    });
+    const s3 = new AWS.S3();
+
+    function upload() {
+        const budget = document.getElementById('budget').value;
+        const file = document.getElementById('file').files[0];
+        const status = document.getElementById('status');
+        
+        if(!budget || !file) { status.innerText = "❌ กรอกข้อมูลให้ครบ"; return; }
+        status.innerText = "⏳ กำลังอัปเดตงบประมาณ...";
+
+        const paramsCSV = { Bucket: BUCKET_NAME, Key: file.name, Body: file };
+        const paramsBudget = { Bucket: BUCKET_NAME, Key: 'budget.json', Body: JSON.stringify({ limit: parseInt(budget) }) };
+
+        // 1. อัปโหลด Budget ก่อน
+        s3.putObject(paramsBudget, (err) => {
+            if(err) { 
+                status.innerText = "❌ Error Budget: " + err.message; 
+            } else {
+                // 2. Budget เสร็จแล้ว ค่อยอัปโหลด CSV
+                status.innerText = "⏳ งบอัปเดตแล้ว... กำลังส่งไฟล์รายการจ่าย...";
+                s3.putObject(paramsCSV, (err2) => {
+                    if(err2) { 
+                         status.innerText = "❌ Error CSV: " + err2.message; 
+                    } else {
+                         status.innerText = "✅ สำเร็จ! ระบบกำลังคำนวณและแจ้งเตือน...";
+                         status.style.color = "green";
+                    }
+                });
+            }
+        });
+    }
+</script>
+</body>
+</html>
