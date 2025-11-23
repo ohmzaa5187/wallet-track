@@ -4,8 +4,11 @@
 
 Create table 
 Table name: ExpenseTracker
+
 Partition key: Month  ชนิดข้อมูลด้านขวาเป็น String
+
 Create table
+
 รอสักครู่จนกว่าสถานะ Status จะขึ้นคำว่า Active
 
 Step 2 ไปที่ Search -> Simple Notification Service
